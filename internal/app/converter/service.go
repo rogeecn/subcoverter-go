@@ -12,6 +12,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/subconverter/subconverter-go/internal/app/generator"
 	"github.com/subconverter/subconverter-go/internal/app/parser"
+	"github.com/subconverter/subconverter-go/internal/app/template"
 	"github.com/subconverter/subconverter-go/internal/domain/proxy"
 	"github.com/subconverter/subconverter-go/internal/infra/cache"
 	"github.com/subconverter/subconverter-go/internal/infra/config"
@@ -24,6 +25,7 @@ import (
 type Service struct {
 	parserManager    *parser.Manager
 	generatorManager *generator.Manager
+	templateManager  *template.Manager
 	cache            cache.Cache
 	config           *config.Config
 	httpClient       *http.Client
@@ -32,9 +34,12 @@ type Service struct {
 
 // NewService creates a new conversion service
 func NewService(cfg *config.Config, log *logger.Logger) *Service {
+	templateManager := template.NewManager(cfg.Generator.TemplatesDir, cfg.Generator.RulesDir, *log)
+	
 	return &Service{
 		parserManager:    parser.NewManager(),
 		generatorManager: generator.NewManager(),
+		templateManager:  templateManager,
 		cache:            cache.NewMemoryCache(),
 		config:           cfg,
 		httpClient:       http.NewClient(),
@@ -84,6 +89,7 @@ func (s *Service) Convert(ctx context.Context, req *ConvertRequest) (*ConvertRes
 		UDPEnabled:    req.Options.UDP,
 		RenameRules:   req.Options.RenameRules,
 		EmojiRules:    req.Options.EmojiRules,
+		BaseTemplate:  req.Options.BaseTemplate,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate configuration")
@@ -355,7 +361,7 @@ func (s *Service) generateCacheKey(req *ConvertRequest) string {
 
 // RegisterGenerators registers all available generators
 func (s *Service) RegisterGenerators() {
-	s.generatorManager.Register("clash", generator.NewClashGenerator())
+	s.generatorManager.Register("clash", generator.NewClashGenerator(s.templateManager))
 	s.generatorManager.Register("surge", generator.NewSurgeGenerator())
 	s.generatorManager.Register("quantumult", generator.NewQuantumultGenerator())
 	s.generatorManager.Register("loon", generator.NewLoonGenerator())

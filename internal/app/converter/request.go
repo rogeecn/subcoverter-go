@@ -24,6 +24,7 @@ type Options struct {
 	UDP            bool                    `json:"udp,omitempty"`
 	ProxyGroups    []generator.ProxyGroup  `json:"proxy_groups,omitempty"`
 	Rules          []string                `json:"rules,omitempty"`
+	BaseTemplate   string                  `json:"base_template,omitempty"`
 	CustomOptions  map[string]interface{}  `json:"custom_options,omitempty"`
 }
 

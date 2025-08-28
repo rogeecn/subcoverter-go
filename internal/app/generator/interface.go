@@ -22,15 +22,16 @@ type Generator interface {
 
 // GenerateOptions contains options for configuration generation
 type GenerateOptions struct {
-	ProxyGroups   []ProxyGroup   `json:"proxy_groups"`
-	Rules         []string       `json:"rules"`
-	Template      string         `json:"template,omitempty"`
-	RenameRules   []RenameRule   `json:"rename_rules,omitempty"`
-	EmojiRules    []EmojiRule    `json:"emoji_rules,omitempty"`
-	SortProxies   bool           `json:"sort_proxies"`
-	UDPEnabled    bool           `json:"udp_enabled"`
-	SkipFailed    bool           `json:"skip_failed"`
-	CustomOptions map[string]interface{} `json:"custom_options,omitempty"`
+	ProxyGroups    []ProxyGroup   `json:"proxy_groups"`
+	Rules          []string       `json:"rules"`
+	Template       string         `json:"template,omitempty"`
+	BaseTemplate   string         `json:"base_template,omitempty"`
+	RenameRules    []RenameRule   `json:"rename_rules,omitempty"`
+	EmojiRules     []EmojiRule    `json:"emoji_rules,omitempty"`
+	SortProxies    bool           `json:"sort_proxies"`
+	UDPEnabled     bool           `json:"udp_enabled"`
+	SkipFailed     bool           `json:"skip_failed"`
+	CustomOptions  map[string]interface{} `json:"custom_options,omitempty"`
 }
 
 // ProxyGroup represents a proxy group configuration

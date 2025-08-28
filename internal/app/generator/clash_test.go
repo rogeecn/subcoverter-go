@@ -11,7 +11,7 @@ import (
 )
 
 func TestClashGenerator_Generate(t *testing.T) {
-	generator := NewClashGenerator()
+	generator := NewClashGenerator(nil)
 	ctx := context.Background()
 
 	proxies := []*proxy.Proxy{
@@ -105,17 +105,17 @@ func TestClashGenerator_Generate(t *testing.T) {
 }
 
 func TestClashGenerator_ContentType(t *testing.T) {
-	generator := NewClashGenerator()
+	generator := NewClashGenerator(nil)
 	assert.Equal(t, "application/x-yaml", generator.ContentType())
 }
 
 func TestClashGenerator_Name(t *testing.T) {
-	generator := NewClashGenerator()
+	generator := NewClashGenerator(nil)
 	assert.Equal(t, "clash", generator.Name())
 }
 
 func TestClashGenerator_EmptyProxies(t *testing.T) {
-	generator := NewClashGenerator()
+	generator := NewClashGenerator(nil)
 	ctx := context.Background()
 
 	config, err := generator.Generate(ctx, []*proxy.Proxy{}, []ProxyGroup{}, []string{}, GenerateOptions{})
@@ -124,7 +124,7 @@ func TestClashGenerator_EmptyProxies(t *testing.T) {
 }
 
 func BenchmarkClashGenerator_Generate(b *testing.B) {
-	generator := NewClashGenerator()
+	generator := NewClashGenerator(nil)
 	ctx := context.Background()
 
 	proxies := []*proxy.Proxy{

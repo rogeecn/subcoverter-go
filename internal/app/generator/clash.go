@@ -7,14 +7,19 @@ import (
 
 	"gopkg.in/yaml.v3"
 	"github.com/samber/lo"
+	"github.com/subconverter/subconverter-go/internal/app/template"
 	"github.com/subconverter/subconverter-go/internal/domain/proxy"
 	"github.com/subconverter/subconverter-go/internal/domain/ruleset"
 )
 
-type ClashGenerator struct{}
+type ClashGenerator struct{
+	templateManager *template.Manager
+}
 
-func NewClashGenerator() *ClashGenerator {
-	return &ClashGenerator{}
+func NewClashGenerator(templateManager *template.Manager) *ClashGenerator {
+	return &ClashGenerator{
+		templateManager: templateManager,
+	}
 }
 
 func (g *ClashGenerator) Format() string {
@@ -26,6 +31,18 @@ func (g *ClashGenerator) ContentType() string {
 }
 
 func (g *ClashGenerator) Generate(ctx context.Context, proxies []*proxy.Proxy, rulesets []*ruleset.RuleSet, options GenerateOptions) (string, error) {
+	// Load base template if specified
+	if options.BaseTemplate != "" && g.templateManager != nil {
+		templateData, err := g.templateManager.RenderTemplate(ctx, options.BaseTemplate, map[string]interface{}{
+			"proxies": proxies,
+			"rulesets": rulesets,
+			"options": options,
+		})
+		if err == nil {
+			return templateData, nil
+		}
+	}
+
 	config := make(map[string]interface{})
 	
 	// Process proxies

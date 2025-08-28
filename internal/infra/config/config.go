@@ -93,8 +93,8 @@ func Load() *Config {
 	viper.SetDefault("security.cors.origins", []string{"*"})
 	viper.SetDefault("parser.timeout", 30)
 	viper.SetDefault("parser.max_size", 10485760)
-	viper.SetDefault("generator.templates_dir", "./templates")
-	viper.SetDefault("generator.rules_dir", "./rules")
+	viper.SetDefault("generator.templates_dir", "./base/base")
+	viper.SetDefault("generator.rules_dir", "./base/rules")
 
 	viper.AutomaticEnv()
 
