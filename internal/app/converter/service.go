@@ -35,9 +35,9 @@ type Service struct {
 // NewService creates a new conversion service
 func NewService(cfg *config.Config, log *logger.Logger) *Service {
 	templateManager := template.NewManager(cfg.Generator.TemplatesDir, cfg.Generator.RulesDir, *log)
-	
+
 	return &Service{
-		parserManager:    parser.NewManager(),
+		parserManager:    parser.NewManager(log),
 		generatorManager: generator.NewManager(),
 		templateManager:  templateManager,
 		cache:            cache.NewMemoryCache(),
@@ -52,9 +52,9 @@ func (s *Service) Convert(ctx context.Context, req *ConvertRequest) (*ConvertRes
 	start := time.Now()
 	defer func() {
 		s.logger.WithFields(map[string]interface{}{
-			"target":    req.Target,
-			"urls":      len(req.URLs),
-			"duration":  time.Since(start),
+			"target":   req.Target,
+			"urls":     len(req.URLs),
+			"duration": time.Since(start),
 		}).Info("Conversion completed")
 	}()
 
@@ -83,13 +83,13 @@ func (s *Service) Convert(ctx context.Context, req *ConvertRequest) (*ConvertRes
 
 	// Generate configuration
 	config, err := s.generatorManager.Generate(ctx, req.Target, filteredProxies, nil, generator.GenerateOptions{
-		ProxyGroups:   s.buildProxyGroups(req.Options),
-		Rules:         req.Options.Rules,
-		SortProxies:   req.Options.Sort,
-		UDPEnabled:    req.Options.UDP,
-		RenameRules:   req.Options.RenameRules,
-		EmojiRules:    req.Options.EmojiRules,
-		BaseTemplate:  req.Options.BaseTemplate,
+		ProxyGroups:  s.buildProxyGroups(req.Options),
+		Rules:        req.Options.Rules,
+		SortProxies:  req.Options.Sort,
+		UDPEnabled:   req.Options.UDP,
+		RenameRules:  req.Options.RenameRules,
+		EmojiRules:   req.Options.EmojiRules,
+		BaseTemplate: req.Options.BaseTemplate,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to generate configuration")
@@ -355,7 +355,10 @@ func (s *Service) buildProxyGroups(options Options) []generator.ProxyGroup {
 }
 
 func (s *Service) generateCacheKey(req *ConvertRequest) string {
-	key := fmt.Sprintf("convert:%s:%s", req.Target, strings.Join(req.URLs, ","))
+	urls := make([]string, len(req.URLs))
+	copy(urls, req.URLs)
+	sort.Strings(urls)
+	key := fmt.Sprintf("convert:%s:%s", req.Target, strings.Join(urls, ","))
 	return key
 }
 

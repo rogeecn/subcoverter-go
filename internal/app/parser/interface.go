@@ -5,16 +5,17 @@ import (
 	"strings"
 
 	"github.com/subconverter/subconverter-go/internal/domain/proxy"
+	"github.com/subconverter/subconverter-go/internal/pkg/logger"
 )
 
 // Parser defines the interface for parsing different proxy protocols
 type Parser interface {
 	// Parse parses the subscription content into proxy configurations
 	Parse(ctx context.Context, content string) ([]*proxy.Proxy, error)
-	
+
 	// Support checks if the parser supports the given content format
 	Support(content string) bool
-	
+
 	// Type returns the type of proxy this parser handles
 	Type() proxy.Type
 }
@@ -22,11 +23,13 @@ type Parser interface {
 // Manager manages multiple parsers and dispatches parsing tasks
 type Manager struct {
 	parsers []Parser
+	logger  *logger.Logger
 }
 
 // NewManager creates a new parser manager with all available parsers
-func NewManager() *Manager {
+func NewManager(log *logger.Logger) *Manager {
 	return &Manager{
+		logger: log,
 		parsers: []Parser{
 			NewSSParser(),
 			NewSSRParser(),
@@ -45,21 +48,22 @@ func NewManager() *Manager {
 // Parse parses subscription content using appropriate parser
 func (m *Manager) Parse(ctx context.Context, content string) ([]*proxy.Proxy, error) {
 	var allProxies []*proxy.Proxy
-	
+
 	// Split content by lines and parse each line
 	lines := splitContent(content)
-	
+
 	for _, line := range lines {
 		line = cleanLine(line)
 		if line == "" {
 			continue
 		}
-		
+
 		for _, parser := range m.parsers {
 			if parser.Support(line) {
 				proxies, err := parser.Parse(ctx, line)
 				if err != nil {
 					// Log error but continue processing other lines
+					m.logger.WithError(err).WithField("line", line).Warn("Failed to parse proxy line")
 					continue
 				}
 				allProxies = append(allProxies, proxies...)
@@ -67,7 +71,7 @@ func (m *Manager) Parse(ctx context.Context, content string) ([]*proxy.Proxy, er
 			}
 		}
 	}
-	
+
 	return allProxies, nil
 }
 

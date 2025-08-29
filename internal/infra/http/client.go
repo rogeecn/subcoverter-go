@@ -20,7 +20,7 @@ func NewClient() *Client {
 	return &Client{
 		client: req.C().
 			SetTimeout(30 * time.Second).
-			SetUserAgent("SubConverter-Go/1.0").
+			SetUserAgent("v2ray").
 			EnableInsecureSkipVerify(),
 	}
 }
@@ -30,15 +30,14 @@ func (c *Client) Get(ctx context.Context, url string) ([]byte, error) {
 	resp, err := c.client.R().
 		SetContext(ctx).
 		Get(url)
-	
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch URL")
 	}
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.BadRequest("FETCH_FAILED", fmt.Sprintf("HTTP %d: %s", resp.StatusCode, resp.Status))
 	}
-	
+
 	return resp.Bytes(), nil
 }
 
@@ -47,7 +46,7 @@ func (c *Client) Health(ctx context.Context) error {
 	_, err := c.client.R().
 		SetContext(ctx).
 		Head("http://httpbin.org/headers")
-	
+
 	return err
 }
 
