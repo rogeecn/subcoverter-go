@@ -10,6 +10,10 @@ import (
 	"github.com/subconverter/subconverter-go/internal/pkg/errors"
 )
 
+type contextKey string
+
+const UserAgentKey = contextKey("userAgent")
+
 // Client represents an HTTP client
 type Client struct {
 	client *req.Client
@@ -27,9 +31,13 @@ func NewClient() *Client {
 
 // Get performs a GET request
 func (c *Client) Get(ctx context.Context, url string) ([]byte, error) {
-	resp, err := c.client.R().
-		SetContext(ctx).
-		Get(url)
+	r := c.client.R().SetContext(ctx)
+
+	if ua, ok := ctx.Value(UserAgentKey).(string); ok && ua != "" {
+		r.SetHeader("User-Agent", ua)
+	}
+
+	resp, err := r.Get(url)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch URL")
 	}

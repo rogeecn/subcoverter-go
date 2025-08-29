@@ -13,6 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/subconverter/subconverter-go/internal/app/converter"
 	"github.com/subconverter/subconverter-go/internal/infra/config"
+	"github.com/subconverter/subconverter-go/internal/infra/http"
 	"github.com/subconverter/subconverter-go/internal/pkg/errors"
 	"github.com/subconverter/subconverter-go/internal/pkg/validator"
 )
@@ -98,7 +99,11 @@ func (r *Router) handleConvert(c *fiber.Ctx) error {
 		return r.errorResponse(c, err)
 	}
 
-	resp, err := r.service.Convert(c.Context(), &req)
+	// Add user-agent to context
+	userAgent := c.Get("User-Agent")
+	ctx := context.WithValue(c.Context(), http.UserAgentKey, userAgent)
+
+	resp, err := r.service.Convert(ctx, &req)
 	if err != nil {
 		return r.errorResponse(c, err)
 	}
@@ -128,8 +133,12 @@ func (r *Router) handleBatchConvert(c *fiber.Ctx) error {
 	results := make([]converter.ConvertResponse, 0, len(req.Requests))
 	errorsList := make([]string, 0)
 
+	// Add user-agent to context
+	userAgent := c.Get("User-Agent")
+	ctx := context.WithValue(c.Context(), http.UserAgentKey, userAgent)
+
 	for _, convReq := range req.Requests {
-		resp, err := r.service.Convert(c.Context(), &convReq)
+		resp, err := r.service.Convert(ctx, &convReq)
 		if err != nil {
 			errorsList = append(errorsList, err.Error())
 			continue
@@ -154,28 +163,16 @@ func (r *Router) handleValidate(c *fiber.Ctx) error {
 		return r.errorResponse(c, err)
 	}
 
-	// Simple validation by fetching and parsing
-	content, err := r.service.HTTPClient().Get(c.Context(), req.URL)
+	// Add user-agent to context
+	userAgent := c.Get("User-Agent")
+	ctx := context.WithValue(c.Context(), http.UserAgentKey, userAgent)
+
+	resp, err := r.service.Validate(ctx, &req)
 	if err != nil {
-		return c.JSON(converter.ValidateResponse{
-			Valid: false,
-			Error: err.Error(),
-		})
+		return r.errorResponse(c, err)
 	}
 
-	proxies, err := r.service.ParserManager().Parse(c.Context(), string(content))
-	if err != nil {
-		return c.JSON(converter.ValidateResponse{
-			Valid: false,
-			Error: err.Error(),
-		})
-	}
-
-	return c.JSON(converter.ValidateResponse{
-		Valid:   true,
-		Format:  r.service.DetectFormat(string(content)),
-		Proxies: len(proxies),
-	})
+	return c.JSON(resp)
 }
 
 // handleInfo returns service information
