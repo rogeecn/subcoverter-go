@@ -3,7 +3,6 @@ package converter
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/subconverter/subconverter-go/internal/infra/config"
 	"github.com/subconverter/subconverter-go/internal/pkg/logger"
@@ -26,7 +25,7 @@ func TestService_Convert(t *testing.T) {
 	service.RegisterGenerators()
 
 	t.Run("invalid target", func(t *testing.T) {
-		req := &ConvertRequest{
+		_ = &ConvertRequest{
 			Target: "invalid",
 			URLs:   []string{"https://example.com/subscription"},
 		}
@@ -36,7 +35,7 @@ func TestService_Convert(t *testing.T) {
 	})
 
 	t.Run("empty URLs", func(t *testing.T) {
-		req := &ConvertRequest{
+		_ = &ConvertRequest{
 			Target: "clash",
 			URLs:   []string{},
 		}
@@ -46,7 +45,7 @@ func TestService_Convert(t *testing.T) {
 	})
 
 	t.Run("valid request", func(t *testing.T) {
-		req := &ConvertRequest{
+		_ = &ConvertRequest{
 			Target: "clash",
 			URLs:   []string{"https://example.com/subscription"},
 		}
