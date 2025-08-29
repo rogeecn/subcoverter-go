@@ -2,6 +2,7 @@ package parser
 
 import (
 	"context"
+	"encoding/base64"
 	"strings"
 
 	"github.com/subconverter/subconverter-go/internal/domain/proxy"
@@ -31,6 +32,7 @@ func NewManager(log *logger.Logger) *Manager {
 	return &Manager{
 		logger: log,
 		parsers: []Parser{
+			NewClashParser(),
 			NewSSParser(),
 			NewSSRParser(),
 			NewVMessParser(),
@@ -47,27 +49,45 @@ func NewManager(log *logger.Logger) *Manager {
 
 // Parse parses subscription content using appropriate parser
 func (m *Manager) Parse(ctx context.Context, content string) ([]*proxy.Proxy, error) {
+	// Attempt to decode Base64 content, as many subscriptions are encoded this way.
+	processedContent := content
+	if decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(content)); err == nil {
+		processedContent = string(decoded)
+	} else if decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimSpace(content)); err == nil {
+		processedContent = string(decoded)
+	}
+
+	// Stage 1: Try to find a parser that can handle the entire content block.
+	// This is for file-based formats like Clash, which are not line-based.
+	for _, parser := range m.parsers {
+		// Heuristic to identify whole-file parsers. For now, only 'clash'.
+		if parser.Type() == "clash" && parser.Support(processedContent) {
+			return parser.Parse(ctx, processedContent)
+		}
+	}
+
+	// Stage 2: If no whole-file parser matched, assume it's a list of proxy links (one per line).
 	var allProxies []*proxy.Proxy
-
-	// Split content by lines and parse each line
-	lines := splitContent(content)
-
+	lines := splitContent(processedContent)
 	for _, line := range lines {
 		line = cleanLine(line)
 		if line == "" {
 			continue
 		}
 
+		// Find a suitable line-based parser.
 		for _, parser := range m.parsers {
+			if parser.Type() == "clash" { // Skip whole-file parsers here.
+				continue
+			}
 			if parser.Support(line) {
 				proxies, err := parser.Parse(ctx, line)
 				if err != nil {
-					// Log error but continue processing other lines
 					m.logger.WithError(err).WithField("line", line).Warn("Failed to parse proxy line")
-					continue
+					break // A parser supported the line but failed to parse it. Move to the next line.
 				}
 				allProxies = append(allProxies, proxies...)
-				break
+				break // Successfully parsed the line. Move to the next line.
 			}
 		}
 	}
